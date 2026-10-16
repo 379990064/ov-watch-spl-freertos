@@ -1,7 +1,9 @@
 #include "lcd_init.h"
 #include "delay.h"
-#include "spi.h"
+#include "MYSPI.h"
 #include "tim.h"
+
+
 
 /******************************************************************************
       函数说明：LCD端口初始化
@@ -10,15 +12,27 @@
 ******************************************************************************/
 void LCD_GPIO_Init(void)
 {
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOC | RCC_AHB1Periph_GPIOD,ENABLE);
+
 	GPIO_InitTypeDef  GPIO_InitStructure = {0};
 	
- 	__HAL_RCC_GPIOB_CLK_ENABLE();
+	GPIO_InitStructure.GPIO_Pin = RES_PIN;	 
+ 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT; 		 //推挽输出
+	GPIO_InitStructure.GPIO_Speed = GPIO_Fast_Speed;//速度50MHz
+	GPIO_InitStructure.GPIO_OType	=	GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd	=	GPIO_PuPd_NOPULL;
+ 	GPIO_Init(GPIOB, &GPIO_InitStructure);	  //初始化GPIOB
+
+	GPIO_InitStructure.GPIO_Pin = DC_PIN;	
+	GPIO_Init(GPIOC, &GPIO_InitStructure);	
+
+	GPIO_InitStructure.GPIO_Pin = CS_PIN;	
+	GPIO_Init(GPIOD, &GPIO_InitStructure);	
+
 	
-	GPIO_InitStructure.Pin = RES_PIN|CS_PIN|DC_PIN;	 
- 	GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP; 		 //推挽输出
-	GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;//速度50MHz
- 	HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);	  //初始化GPIOB
- 	HAL_GPIO_WritePin(GPIOB, RES_PIN|CS_PIN|DC_PIN, GPIO_PIN_SET);
+ 	GPIO_WriteBit(GPIOB, RES_PIN, SET);
+	GPIO_WriteBit(GPIOC, DC_PIN, SET);
+	GPIO_WriteBit(GPIOD, CS_PIN, SET);
 }
 
 
@@ -30,7 +44,7 @@ void LCD_GPIO_Init(void)
 void LCD_Writ_Bus(u8 dat) 
 {	
 	//hard SPI
-	HAL_SPI_Transmit(&hspi1,&dat,1,1);
+	SPI1_ReadWriteByte(dat);
 	
 	//soft SPI
 	/*
@@ -69,17 +83,16 @@ void LCD_WR_DATA8(u8 dat)
       入口数据：dat 写入的数据
       返回值：  无
 ******************************************************************************/
-void LCD_WR_DATA(u16 dat)
-{
-//	LCD_Writ_Bus(dat>>8);
-//	LCD_Writ_Bus(dat);
-	uint8_t temp[2];
-	temp[0]=(dat>>8)&0xff;
-	temp[1]=dat&0xff;
-	HAL_SPI_Transmit(&hspi1,temp,2,1);
-	
-}
 
+void LCD_WR_DATA(uint16_t dat)
+{
+    uint8_t temp[2];
+    temp[0] = (dat >> 8) & 0xff;
+    temp[1] = dat & 0xff;
+
+    SPI1_TransmitByte(temp[0]);
+    SPI1_TransmitByte(temp[1]);
+}
 
 /******************************************************************************
       函数说明：LCD写入命令
@@ -89,7 +102,7 @@ void LCD_WR_DATA(u16 dat)
 void LCD_WR_REG(u8 dat)
 {
 	LCD_DC_Clr();//写命令
-	LCD_Writ_Bus(dat);
+	SPI1_TransmitByte(dat);
 	LCD_DC_Set();//写数据
 }
 
@@ -117,12 +130,12 @@ void LCD_Address_Set(u16 x1,u16 y1,u16 x2,u16 y2)
       入口数据：dc,占空比,5%~100%
       返回值：  无
 ******************************************************************************/
+
 void LCD_Set_Light(uint8_t dc)
 {
-	if(dc>=5 && dc<=100)
-		__HAL_TIM_SetCompare(&htim3,TIM_CHANNEL_3,dc*PWM_PERIOD/100);
+    if (dc >= 5 && dc <= 100)
+        TIM_SetCompare3(TIM3, dc * PWM_PERIOD / 100);
 }
-
 
 /******************************************************************************
       函数说明：LCD关闭背光
@@ -131,7 +144,7 @@ void LCD_Set_Light(uint8_t dc)
 ******************************************************************************/
 void LCD_Close_Light(void)
 {
-	__HAL_TIM_SetCompare(&htim3,TIM_CHANNEL_3,0);
+	TIM_SetCompare3(TIM3, 0);
 	//HAL_TIM_PWM_Stop(&htim3,TIM_CHANNEL_3);
 }
 
@@ -143,7 +156,7 @@ void LCD_Close_Light(void)
 ******************************************************************************/
 void LCD_Open_Light(void)
 {
-	HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_3);
+        TIM_SetCompare3(TIM3, 150);
 }
 
 /******************************************************************************
@@ -154,7 +167,7 @@ void LCD_Open_Light(void)
 void LCD_ST7789_SleepIn(void)
 {
 	LCD_WR_REG(0x10);
-	delay_ms(100);
+	Delay_ms(100);
 }
 
 
@@ -166,7 +179,7 @@ void LCD_ST7789_SleepIn(void)
 void LCD_ST7789_SleepOut(void)
 {
 	LCD_WR_REG(0x11);
-	delay_ms(100);
+	Delay_ms(100);
 }
 
 
@@ -181,12 +194,12 @@ void LCD_Init(void)
 	LCD_CS_Clr();		//chip select
 	
 	LCD_RES_Clr();	//复位
-	delay_ms(100);
+	Delay_ms(100);
 	LCD_RES_Set();
-	delay_ms(100);
+	Delay_ms(100);
 	
 	LCD_WR_REG(0x11); 
-	delay_ms(120); 
+	Delay_ms(120); 
 	LCD_WR_REG(0x36); 
 	if(USE_HORIZONTAL==0)LCD_WR_DATA8(0x00);
 	else if(USE_HORIZONTAL==1)LCD_WR_DATA8(0xC0);

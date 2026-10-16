@@ -1,4 +1,4 @@
-#include "serial.h"
+﻿#include "serial.h"
 #include "stm32f4xx.h"
 /* USART1 初始化结构体 */
 USART_InitTypeDef USART1_InitStructure;
@@ -6,6 +6,9 @@ USART_InitTypeDef USART1_InitStructure;
 /* DMA 收发结构体 */
 DMA_InitTypeDef DMA2_Stream5_InitStructure;  // USART1_RX
 DMA_InitTypeDef DMA2_Stream7_InitStructure;  // USART1_TX
+
+/* USART1 DMA 接收缓冲区（25 字节，与 USART1_DMA_RX_Start 长度一致） */
+uint8_t HardInt_receive_str[25] = {0};
 
 /* USART1 初始化函数（对应 MX_USART1_UART_Init） */
 void MX_USART1_UART_Init(void)

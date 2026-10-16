@@ -1,21 +1,23 @@
-#ifndef __CST816_H
+﻿#ifndef __CST816_H
 #define __CST816_H
 
 #include "stdint.h"
 #include "myi2c.h"
 #include "delay.h"
+#include "stm32f4xx.h"                  // Device header
+
 
 /* CST816 dev pin defination */
 
 
-#define TOUCH_RST_PIN GPIO_PIN_15
-#define TOUCH_INT_PIN GPIO_PIN_1
+#define TOUCH_RST_PIN GPIO_Pin_15
+#define TOUCH_INT_PIN GPIO_Pin_1
 #define TOUCH_RST_PORT GPIOA
 #define TOUCH_INT_PORT GPIOB
 
 /* functions define */
-#define TOUCH_RST_0 HAL_GPIO_WritePin(TOUCH_RST_PORT, TOUCH_RST_PIN, GPIO_PIN_RESET)
-#define TOUCH_RST_1 HAL_GPIO_WritePin(TOUCH_RST_PORT, TOUCH_RST_PIN, GPIO_PIN_SET)
+#define TOUCH_RST_0 GPIO_WriteBit(TOUCH_RST_PORT, TOUCH_RST_PIN, RESET)
+#define TOUCH_RST_1 GPIO_WriteBit(TOUCH_RST_PORT, TOUCH_RST_PIN, SET)
 
 /* 设备地址 */
 #define Device_Addr 	0x15

@@ -30,3 +30,7 @@
 .\objects\lcd.o: .\FWLIB\inc\stm32f4xx_wwdg.h
 .\objects\lcd.o: .\FWLIB\inc\misc.h
 .\objects\lcd.o: .\FWLIB\inc\stm32f4xx_flash_ramfunc.h
+.\objects\lcd.o: BSP\LCD\lcd_init.h
+.\objects\lcd.o: BSP\LCD\lcdfont.h
+.\objects\lcd.o: .\System\delay.h
+.\objects\lcd.o: .\BSP\spi\MYSPI.h

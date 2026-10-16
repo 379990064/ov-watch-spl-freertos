@@ -1,7 +1,9 @@
-#include "stm32f4xx.h"                  // Device header
+﻿#include "stm32f4xx.h"                  // Device header
 #include "Delay.h"
 #include "FreeRTOS.h"
-#define KEY1        GPIO_ReadPinBit(GPIOA, GPIO_Pin_0)
+#include "Key.h"
+#include "task.h"
+
 /**
   * 函    数：按键初始化
   * 参    数：无
@@ -10,11 +12,13 @@
 void Key_Init(void)
 {
 	/*开启时钟*/
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);		//开启GPIOB的时钟
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);		//开启GPIOB的时钟
 	
 	/*GPIO初始化*/
 	GPIO_InitTypeDef GPIO_InitStructure;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+	GPIO_InitStructure.GPIO_OType	=	GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd	=	GPIO_PuPd_UP;
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);						//将PB1和PB11引脚初始化为上拉输入
@@ -50,4 +54,11 @@ uint8_t Key_GetNum(uint8_t mode)
 	}
 	return Keyvalue;
 
+}
+
+/* OV-Watch 兼容桩：KeyScan(mode) 返回当前键码（本工程无实体按键，恒返回 0） */
+uint8_t KeyScan(uint8_t mode)
+{
+	(void)mode;
+	return 0;
 }

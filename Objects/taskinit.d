@@ -1,0 +1,14 @@
+.\objects\taskinit.o: User\task\taskinit.c
+.\objects\taskinit.o: .\Freertos\inc\FreeRTOS.h
+.\objects\taskinit.o: E:\keil\ARM\ARMCC\Bin\..\include\stddef.h
+.\objects\taskinit.o: E:\keil\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\taskinit.o: .\Freertos\inc\FreeRTOSConfig.h
+.\objects\taskinit.o: .\Freertos\inc\projdefs.h
+.\objects\taskinit.o: .\Freertos\inc\portable.h
+.\objects\taskinit.o: .\Freertos\inc\deprecated_definitions.h
+.\objects\taskinit.o: .\Freertos\port\portmacro.h
+.\objects\taskinit.o: .\Freertos\inc\mpu_wrappers.h
+.\objects\taskinit.o: .\Freertos\inc\task.h
+.\objects\taskinit.o: .\Freertos\inc\list.h
+.\objects\taskinit.o: .\Freertos\inc\queue.h
+.\objects\taskinit.o: .\Freertos\inc\timers.h

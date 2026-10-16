@@ -1,4 +1,4 @@
-#include "MYSPI.h"
+﻿#include "MYSPI.h"
 
 /* SPI1 全局句柄（标准库无句柄，但保留结构体方便扩展） */
 SPI_InitTypeDef SPI1_InitStructure;
@@ -56,6 +56,16 @@ void MX_SPI1_Init(void)
     DMA2_Stream2_InitStructure.DMA_PeripheralBurst    = DMA_PeripheralBurst_Single;
     DMA_Init(DMA2_Stream2, &DMA2_Stream2_InitStructure);
 
+    NVIC_InitTypeDef NVIC_InitStructure;
+
+    NVIC_InitStructure.NVIC_IRQChannel                   = DMA2_Stream2_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority        = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd                = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+
+// 使能 DMA2_Stream2 的传输完成中断
+    DMA_ITConfig(DMA2_Stream2, DMA_IT_TC, ENABLE);
     /* 6. 使能 SPI1 的 TX DMA 请求 */
     SPI_I2S_DMACmd(SPI1, SPI_I2S_DMAReq_Tx, ENABLE);
 
@@ -76,4 +86,19 @@ void SPI1_DMA_TX_Start(uint8_t *buf, uint16_t len)
     DMA2_Stream2->M0AR = (uint32_t)buf;
     DMA_SetCurrDataCounter(DMA2_Stream2, len);
     DMA_Cmd(DMA2_Stream2, ENABLE);
+}
+
+uint8_t SPI1_ReadWriteByte(uint8_t TxData)
+{
+    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
+    SPI_I2S_SendData(SPI1, TxData);
+    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_RXNE) == RESET);
+    return SPI_I2S_ReceiveData(SPI1);
+}
+
+void SPI1_TransmitByte(uint8_t dat)
+{
+    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
+    SPI_I2S_SendData(SPI1, dat);
+    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET);
 }

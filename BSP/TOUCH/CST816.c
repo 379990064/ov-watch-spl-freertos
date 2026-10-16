@@ -1,16 +1,12 @@
-#include "CST816.h" 
+﻿#include "CST816.h" 
+#include "myi2c.h"
+#include "stm32f4xx.h"                  // Device header
 
 #define TOUCH_OFFSET_Y 0
 
 CST816_Info	CST816_Instance;
 
-iic_bus_t CST816_dev =
-{
-	.IIC_SDA_PORT = GPIOB,
-	.IIC_SCL_PORT = GPIOB,
-	.IIC_SDA_PIN = GPIO_PIN_4,
-	.IIC_SCL_PIN = GPIO_PIN_6,
-};
+
 
 /*
 *********************************************************************************************************
@@ -22,26 +18,14 @@ iic_bus_t CST816_dev =
 */
 void CST816_GPIO_Init(void)
 {	
-	GPIO_InitTypeDef GPIO_InitStructure = {0};
-	__HAL_RCC_GPIOB_CLK_ENABLE();
-	__HAL_RCC_GPIOA_CLK_ENABLE();
-	
-	/* 初始化复位引脚 */
-	GPIO_InitStructure.Pin = TOUCH_RST_PIN;
-	GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStructure.Pull = GPIO_PULLUP;
-	GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-	HAL_GPIO_Init(TOUCH_RST_PORT, &GPIO_InitStructure);
-	
-	HAL_GPIO_WritePin(TOUCH_RST_PORT,TOUCH_RST_PIN,GPIO_PIN_SET);
+	myi2c_Init();
 	
 	/* 初始化中断引脚,不用中断的话屏蔽掉 */
 	
 	/* 初始化I2C引脚 */
-	IICInit(&CST816_dev);
 	
 	/* 给一个停止信号, 复位I2C总线上的所有设备到待机模式 */
-	//IICStop(&CST816_dev);
+	myi2c_end();
 }
 
 /*
@@ -69,7 +53,22 @@ void CST816_Init(void)
 */
 uint8_t CST816_IIC_ReadREG(uint8_t addr)
 {
-	return IIC_Read_One_Byte(&CST816_dev,Device_Addr,addr);
+	uint8_t data	=	0;
+	myi2c_start();
+	myi2c_Sendbyte(Device_Addr<<1);
+	if(myi2c_Receiveack())
+		return 0;
+	myi2c_Sendbyte(addr);
+	if(myi2c_Receiveack())
+		return 0;
+	myi2c_start();
+	myi2c_Sendbyte(Device_Addr<<1|1);
+	if(myi2c_Receiveack())
+		return 0;
+	data = myi2c_Receivebyte();
+	myi2c_Sendack(1);
+	myi2c_end();
+	return data;
 }
 
 /*
@@ -83,7 +82,18 @@ uint8_t CST816_IIC_ReadREG(uint8_t addr)
 */
 void CST816_IIC_WriteREG(uint8_t addr, uint8_t dat)
 {
-	IIC_Write_One_Byte(&CST816_dev,Device_Addr,addr,dat);
+	myi2c_start();
+	myi2c_Sendbyte(Device_Addr<<1);
+	if(myi2c_Receiveack())
+		return;
+	myi2c_Sendbyte(addr);
+	if(myi2c_Receiveack())
+		return;
+	myi2c_Sendbyte(dat);
+	if(myi2c_Receiveack())
+		return;
+	myi2c_end();
+	
 }
 
 /*
@@ -97,9 +107,9 @@ void CST816_IIC_WriteREG(uint8_t addr, uint8_t dat)
 void CST816_RESET(void)
 {
 	TOUCH_RST_0;
-	HAL_Delay(10);
+	Delay_ms(10);
 	TOUCH_RST_1;
-	HAL_Delay(100);
+	Delay_ms(100);
 }
 
 /*
@@ -113,7 +123,7 @@ void CST816_RESET(void)
 void CST816_Get_XY_AXIS(void)
 {
 	uint8_t DAT[4];
-	IIC_Read_Multi_Byte(&CST816_dev,Device_Addr,XposH,4,DAT);
+	IIC_Read_Multi_Byte(Device_Addr,XposH,4,DAT);
 	CST816_Instance.X_Pos=((DAT[0]&0x0F)<<8)|DAT[1];//(temp[0]&0X0F)<<4|
 	CST816_Instance.Y_Pos=((DAT[2]&0x0F)<<8)|DAT[3] + TOUCH_OFFSET_Y;//(temp[2]&0X0F)<<4|
 }

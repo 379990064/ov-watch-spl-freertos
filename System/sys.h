@@ -2,7 +2,6 @@
 #define __SYS_H__
 
 #include "stm32f4xx.h"
-#include "stm32f4xx_hal.h"
 
 #define OS_SUPPORT 	0
 #define SYS_CLK 		100

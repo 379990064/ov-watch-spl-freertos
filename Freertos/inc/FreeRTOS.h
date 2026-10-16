@@ -153,7 +153,7 @@
 #endif
 
 #ifndef INCLUDE_vTaskDelay
-    #define INCLUDE_vTaskDelay    0
+    #define INCLUDE_vTaskDelay    1
 #endif
 
 #ifndef INCLUDE_xTaskGetIdleTaskHandle
@@ -201,7 +201,7 @@
 #endif
 
 #ifndef INCLUDE_xTaskGetCurrentTaskHandle
-    #define INCLUDE_xTaskGetCurrentTaskHandle    0
+    #define INCLUDE_xTaskGetCurrentTaskHandle    1
 #endif
 
 #if configUSE_CO_ROUTINES != 0

@@ -1,13 +1,14 @@
-#include "lcd.h"
+﻿#include "lcd.h"
 #include "lcd_init.h"
 #include "lcdfont.h"
 #include "delay.h"
-#include "spi.h"
-#include "cmsis_os.h"
+#include "MYSPI.h"
+#include "stm32f4xx.h"                  // Device header
+
 
 #define OFFSET_Y 20
 
-static LCD_CallbackFunc_t lcd_ready_cb = NULL;
+static LCD_CallbackFunc_t lcd_ready_cb = 0;
 
 /******************************************************************************
       函数说明：在指定区域填充颜色
@@ -36,17 +37,29 @@ void LCD_Fill(u16 xsta,u16 ysta,u16 xend,u16 yend,u16 color)
 								color       要填充的颜色
       返回值：  无
 ******************************************************************************/
-void LCD_Color_Fill(u16 xsta,u16 ysta,u16 xend,u16 yend,u16 *color_p)
+void LCD_Color_Fill(uint16_t xsta, uint16_t ysta, uint16_t xend, uint16_t yend, uint16_t *color_p)
 {
-	u16 i,j,width,height;
-	width = xend-xsta+1;
-	height = yend-ysta+1;
-	uint32_t pixel_count = width * height;
-	uint32_t byte_count = pixel_count * 2U;
+    uint16_t width, height;
+    uint32_t pixel_count;
+    uint32_t byte_count;
 
-	LCD_Address_Set(xsta,ysta+OFFSET_Y,xend,yend+OFFSET_Y);
+    width = xend - xsta + 1;
+    height = yend - ysta + 1;
+    pixel_count = width * height;
+    byte_count = pixel_count * 2U;
 
-	HAL_SPI_Transmit_DMA(&hspi1,(uint8_t*)color_p,byte_count);
+    LCD_Address_Set(xsta, ysta + OFFSET_Y, xend, yend + OFFSET_Y);
+
+    /* 等待上一次 DMA 传输完成 */
+    while (DMA_GetCmdStatus(DMA2_Stream2) != DISABLE);
+
+    /* 关闭 DMA，清除标志，重新配置地址和长度 */
+    DMA_Cmd(DMA2_Stream2, DISABLE);
+    DMA_ClearFlag(DMA2_Stream2, DMA_FLAG_TCIF2 | DMA_FLAG_HTIF2 | DMA_FLAG_TEIF2 |
+                                DMA_FLAG_DMEIF2 | DMA_FLAG_FEIF2);
+    DMA2_Stream2->M0AR = (uint32_t)color_p;
+    DMA_SetCurrDataCounter(DMA2_Stream2, byte_count);
+    DMA_Cmd(DMA2_Stream2, ENABLE);
 }
 
 // 设置通知的回调函数
@@ -56,17 +69,21 @@ void LCD_Set_Flush_Complete_Callback(LCD_CallbackFunc_t cb)
 }
 
 // DMA 传输完成中断回调
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+
+void DMA2_Stream2_IRQHandler(void)
 {
-	if (hspi->Instance == SPI1)
-	{
-		// 确保最后一位数据离开 STM32 的移位寄存器
-		while (hspi->Instance->SR & SPI_FLAG_BSY);
-		if (lcd_ready_cb)
-		{
-			lcd_ready_cb();
-		}
-	}
+    if (DMA_GetITStatus(DMA2_Stream2, DMA_IT_TCIF2) != RESET)
+    {
+        DMA_ClearITPendingBit(DMA2_Stream2, DMA_IT_TCIF2);
+
+        // 确保最后一位数据离开 STM32 的移位寄存器
+        while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET);
+
+        if (lcd_ready_cb)
+        {
+            lcd_ready_cb();
+        }
+    }
 }
 
 /******************************************************************************

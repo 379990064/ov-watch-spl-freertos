@@ -1,0 +1,107 @@
+﻿/* main.c —— 主程序（对应 HAL 参考结构的标准库 + FreeRTOS 版）
+   调试输出：直接写 USART1 寄存器（绕过 printf/重定向，MicroLIB 未开也能用） */
+/* Includes ------------------------------------------------------------------*/
+#include "main.h"
+#include "stm32f4xx.h"                  // Device header
+#include "MYSPI.h"                      // SPI1（LCD）
+#include "tim.h"                        // 背光 TIM2（PA15）
+#include "Serial.h"                     // USART1
+#include "user_TasksInit.h"             // task_init()
+#include "FreeRTOS.h"
+#include "task.h"
+
+/* 直接写 USART1 的调试输出（不依赖 printf/重定向） */
+static void u1_send(uint8_t c)
+{
+    while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);
+    USART_SendData(USART1, c);
+}
+static void u1_puts(const char *s)
+{
+    while (*s) u1_send((uint8_t)*s++);
+    u1_send('\r');
+    u1_send('\n');
+}
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+
+/**
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void)
+{
+    /* 0. 最先初始化串口（用当前默认时钟），确认 MCU 已运行 */
+    MX_USART1_UART_Init();
+    u1_puts("[BOOT] mcu alive");
+
+    /* 1. 系统时钟配置（HSI + PLL → SYSCLK=100MHz，不依赖外部晶振） */
+    SystemClock_Config();
+    /* 时钟变了，重配串口波特率 */
+    MX_USART1_UART_Init();
+    u1_puts("[BOOT] clock ok");
+
+    /* 2. 释放 JTAG（PA15/PB3/PB4），本工程 IROM 从 0x08000000 直烧，不用 VTOR 偏移 */
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+    SYSCFG->MEMRMP = (SYSCFG->MEMRMP & 0xFC00FFFF) | 0x02000000;
+    u1_puts("[BOOT] jtag release ok");
+
+    /* 3. 外设初始化（本板背光 BLK=PA15=TIM2_CH1，用 TIM2；LCD_Set_Light 用 TIM3 是遗留） */
+    MX_SPI1_Init();
+    u1_puts("[BOOT] spi1 ok");
+    MX_TIM2_Init();
+    TIM2_SetPulse(150);                 // 50% 占空比点亮背光
+    u1_puts("[BOOT] tim2 backlight ok");
+
+    /* 4. 创建 FreeRTOS 任务 */
+    task_init();
+    u1_puts("[BOOT] tasks created");
+
+    /* 5. 启动调度器（控制权交给 FreeRTOS） */
+    vTaskStartScheduler();
+
+    /* 若走到这里，说明调度器启动失败 */
+    u1_puts("[BOOT] SCHEDULER FAILED!");
+    while (1)
+    {
+    }
+}
+
+/**
+ * @brief 系统时钟配置（对应参考 HAL 的 SystemClock_Config）
+ *        HSI 16MHz → PLL(M=8, N=100, P=2) → SYSCLK=100MHz
+ *        AHB=1, APB1=2, APB2=1, Flash 等待 3WS
+ * @retval None
+ */
+void SystemClock_Config(void)
+{
+    /* 1. 使能 PWR 时钟，电压调节器 Scale1（100MHz 需要） */
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
+    PWR->CR |= PWR_CR_VOS;              /* VOS=1 → Scale1 */
+
+    /* 2. Flash 等待周期 3 + 使能缓存 */
+    FLASH->ACR = FLASH_ACR_LATENCY_3WS | FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_PRFTEN;
+
+    /* 3. 使能 HSI 并等待就绪 */
+    RCC_HSICmd(ENABLE);
+    while (RCC_GetFlagStatus(RCC_FLAG_HSIRDY) == RESET);
+
+    /* 4. 配置 PLL：源=HSI，M=8，N=100，P=2，Q=4 */
+    RCC_PLLConfig(RCC_PLLSource_HSI, 8, 100, 2, 4);
+    RCC_PLLCmd(ENABLE);
+    while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET);
+
+    /* 5. 总线分频：AHB=SYSCLK/1，APB1=SYSCLK/2，APB2=SYSCLK/1 */
+    RCC_HCLKConfig(RCC_SYSCLK_Div1);
+    RCC_PCLK1Config(RCC_HCLK_Div2);
+    RCC_PCLK2Config(RCC_HCLK_Div1);
+
+    /* 6. 系统时钟源 = PLL（RCC_GetSYSCLKSource 返回 0x08 表示 PLL） */
+    RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
+    while (RCC_GetSYSCLKSource() != 0x08);   /* 0x08：PLL 作为系统时钟 */
+
+    /* 7. 更新 SystemCoreClock，重配 SysTick 1ms（供 Delay_ms / FreeRTOS 时基） */
+    SystemCoreClock = 100000000;
+    SysTick_Config(SystemCoreClock / 1000);
+}

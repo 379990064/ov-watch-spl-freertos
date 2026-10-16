@@ -7,12 +7,15 @@
 
 void myi2c_Init(void)
 {
- RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+ RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
 	
 	GPIO_InitTypeDef GPIO_InitStructure;
- 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+ 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_Pin = SCL | SDA;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+	GPIO_InitStructure.GPIO_PuPd =GPIO_PuPd_UP;
+	
  	GPIO_Init(i2c_Port, &GPIO_InitStructure);
 
 	
@@ -59,11 +62,11 @@ void myi2c_Sendbyte(uint8_t byte)
 	for(i=0;	i<8;	i++)
 	{
 		myi2c_SDA_W(byte & (0x80	>>	i));
-		delay_us(2);
+		Delay_us(2);
 		myi2c_SCL_W(Bit_SET);
-		delay_us(1);
+		Delay_us(1);
 		myi2c_SCL_W(Bit_RESET);
-		delay_us(1);
+		Delay_us(1);
 	}
 }
 	
@@ -73,13 +76,13 @@ uint8_t myi2c_Receivebyte(void)
 	for(i=0;	i<8;	i++)
 	{
 		myi2c_SDA_W(Bit_SET);
-		delay_us(2);
+		Delay_us(2);
 		myi2c_SCL_W(Bit_SET);
-		delay_us(1);
+		Delay_us(1);
 		if(myi2c_SDA_R()	==	1)
 			byte |= (0x80	>>	i);
 		myi2c_SCL_W(Bit_RESET);
-		delay_us(1);
+		Delay_us(1);
 	}
 	return byte;
 }
@@ -88,33 +91,32 @@ void myi2c_Sendack(uint8_t ack)
 {
 
 		myi2c_SDA_W(ack);
-		delay_us(1);
+		Delay_us(1);
 		myi2c_SCL_W(Bit_SET);
-		delay_us(1);
+		Delay_us(1);
 		myi2c_SCL_W(Bit_RESET);
-		delay_us(1);
+		Delay_us(1);
 
 }
 	
 uint8_t myi2c_Receiveack(void)
 {
 	uint8_t errtime = 5;
-	uint8_t i2c_ack	=	0;
 	myi2c_SDA_W(Bit_SET);
-	delay_us(1);
+	Delay_us(1);
 	myi2c_SCL_W(Bit_SET);
-	delay_us(1);
+	Delay_us(1);
 	    while(myi2c_SDA_R())
     {
         errtime--;
-		delay_us(1);
+		Delay_us(1);
         if (0 == errtime)
         {
             myi2c_end();
             return 1;
         }
     }
-			delay_us(1);
+			Delay_us(1);
 	myi2c_SCL_W(Bit_RESET);
 	return 0;
 }
@@ -134,11 +136,11 @@ uint8_t IIC_Write_Multi_Byte(uint8_t daddr,uint8_t reg,uint8_t length,uint8_t bu
 	myi2c_Receiveack();
 	for(i=0;i<length;i++)
 	{
-		Myi2c_Sendbyte(buff[i]);
+		myi2c_Sendbyte(buff[i]);
 		myi2c_Receiveack();
 	}
     myi2c_end();
-	delay_us(1);
+	Delay_us(1);
 	return 0;
 }
 

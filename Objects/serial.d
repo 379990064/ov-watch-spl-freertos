@@ -1,4 +1,5 @@
 .\objects\serial.o: BSP\seiral\Serial.c
+.\objects\serial.o: BSP\seiral\serial.h
 .\objects\serial.o: .\CMSIS\stm32f4xx.h
 .\objects\serial.o: .\CMSIS\core_cm4.h
 .\objects\serial.o: E:\keil\ARM\ARMCC\Bin\..\include\stdint.h
@@ -29,4 +30,3 @@
 .\objects\serial.o: .\FWLIB\inc\misc.h
 .\objects\serial.o: .\FWLIB\inc\stm32f4xx_flash_ramfunc.h
 .\objects\serial.o: E:\keil\ARM\ARMCC\Bin\..\include\stdio.h
-.\objects\serial.o: E:\keil\ARM\ARMCC\Bin\..\include\stdarg.h

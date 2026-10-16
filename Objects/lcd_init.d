@@ -30,3 +30,6 @@
 .\objects\lcd_init.o: .\FWLIB\inc\stm32f4xx_wwdg.h
 .\objects\lcd_init.o: .\FWLIB\inc\misc.h
 .\objects\lcd_init.o: .\FWLIB\inc\stm32f4xx_flash_ramfunc.h
+.\objects\lcd_init.o: .\System\delay.h
+.\objects\lcd_init.o: .\BSP\spi\MYSPI.h
+.\objects\lcd_init.o: .\BSP\tim\tim.h
