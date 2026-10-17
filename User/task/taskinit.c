@@ -127,7 +127,6 @@ void TaskTickHook(void)
             ui_TimerPage_sec += 1;
 
             uint8_t IdleBreakstr = 0;
-            // ★ 关键：用 FromISR 版本
             xQueueSendFromISR(IdleBreak_MessageQueue,
                               &IdleBreakstr,
                               &xHigherPriorityTaskWoken);
@@ -145,7 +144,7 @@ void TaskTickHook(void)
 
     user_HR_timecount += 1;
 
-    // ★ 如果唤醒了更高优先级任务，请求切换
+    //  如果唤醒了更高优先级任务，请求切换
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
@@ -160,10 +159,9 @@ void LvHandlerTask(void *argument)
 
     while (1)
     {
-        /* 最近 1000ms 内有用户操作 → 重置空闲计时，保持亮屏 */
+        /* 最近 1000ms 内有操作 → 重置空闲计时，保持亮屏 */
         if (lv_disp_get_inactive_time(NULL) < 1000)
         {
-            /* 任务上下文，用 xQueueSend，超时 0（不阻塞） */
             xQueueSend(IdleBreak_MessageQueue, &IdleBreakstr, 0);
         }
 

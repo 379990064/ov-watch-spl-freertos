@@ -28,7 +28,6 @@
 uint32_t user_HR_timecount=0;
 
 /* Private function prototypes -----------------------------------------------*/
-// 这是EM7028官方lib的库函数, 没有lib用不了
 extern uint8_t GET_BP_MAX (void);
 extern uint8_t GET_BP_MIN (void);
 extern void Blood_Process (void);
