@@ -24,12 +24,7 @@ void Key_Init(void)
 	GPIO_Init(GPIOA, &GPIO_InitStructure);						//将PB1和PB11引脚初始化为上拉输入
 }
 
-/**
-  * 函    数：按键获取键码
-  * 参    数：无
-  * 返 回 值：按下按键的键码值，范围：0~2，返回0代表没有按键按下
-  * 注意事项：此函数是阻塞式操作，当按键按住不放时，函数会卡住，直到按键松手
-  */
+
 uint8_t Key_GetNum(uint8_t mode)
 {
 	uint8_t Keyvalue = 0;		//定义变量，默认键码值为0
@@ -56,9 +51,7 @@ uint8_t Key_GetNum(uint8_t mode)
 
 }
 
-/* OV-Watch 兼容桩：KeyScan(mode) 返回当前键码（本工程无实体按键，恒返回 0） */
 uint8_t KeyScan(uint8_t mode)
 {
-	(void)mode;
-	return 0;
+	return Key_GetNum(mode);
 }

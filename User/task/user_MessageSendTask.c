@@ -26,11 +26,6 @@
 
 #include "HWDataAccess.h"
 
-/* Private typedef -----------------------------------------------------------*/
-
-/* Private define ------------------------------------------------------------*/
-
-/* Private variables ---------------------------------------------------------*/
 struct
 {
 	RTC_DateTypeDef nowdate;
@@ -48,7 +43,7 @@ struct
 	RTC_TimeTypeDef nowtime;
 }TimeSetMessage;
 
-/* Private function prototypes -----------------------------------------------*/
+
 
 void StrCMD_Get(uint8_t * str,uint8_t * cmd)
 {
@@ -60,7 +55,6 @@ void StrCMD_Get(uint8_t * str,uint8_t * cmd)
   }
 }
 
-//set time//OV+ST=20230629125555
 uint8_t TimeFormat_Get(uint8_t * str)
 {
 	TimeSetMessage.nowdate.RTC_Year = (str[8]-'0')*10+str[9]-'0';
@@ -80,7 +74,7 @@ uint8_t TimeFormat_Get(uint8_t * str)
 		RTC_SetTime1(TimeSetMessage.nowtime.RTC_Hours, TimeSetMessage.nowtime.RTC_Minutes, TimeSetMessage.nowtime.RTC_Seconds);
 		printf("TIMESETOK\r\n");
 	}
-	return 0;   // 补上返回，消除 #940
+	return 0;   
 
 }
 
@@ -93,9 +87,11 @@ void MessageSendTask(void *argument)
 {
 	while(1)
 	{
-		EventBits_t hardint_flags = xEventGroupWaitBits(HardIntEventHandle, HARDINT_EVENT_UART, pdTRUE, pdFALSE, portMAX_DELAY);
-		if((hardint_flags & HARDINT_EVENT_UART) != 0U)
+
+		if(HardInt_uart_flag)
 		{
+			HardInt_uart_flag = 0;
+			{
 			uint8_t IdleBreakstr = 0;
 			xQueueSend(IdleBreak_MessageQueue,&IdleBreakstr,0);
 			printf("RecStr:%s\r\n",HardInt_receive_str);
@@ -137,7 +133,11 @@ void MessageSendTask(void *argument)
 				}
 			}
 			memset(HardInt_receive_str,0,sizeof(HardInt_receive_str));
+			}
 		}
+
+
+		vTaskDelay(pdMS_TO_TICKS(1));
 	}
 }
 

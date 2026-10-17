@@ -9,28 +9,21 @@
 
 #include "main.h"
 #include "stm32f4xx_it.h"
-#include "serial.h"           /* ★ 里面有 serial_MspInit / serial_MspDeInit */
+#include "delay.h"            
+#include "serial.h"          
 #include "lcd_init.h"
 #include "CST816.h"
 #include "key.h"
 
 #include "HWDataAccess.h"
 
-/* ★ SPL 头文件 */
 #include "stm32f4xx.h"
 #include "stm32f4xx_pwr.h"
 #include "stm32f4xx_rcc.h"
 
-/* Private typedef -----------------------------------------------------------*/
 
-/* Private define ------------------------------------------------------------*/
-
-/* Private variables ---------------------------------------------------------*/
 uint32_t IdleTimerCount = 0;
 
-/* Private function prototypes -----------------------------------------------*/
-
-/* Tasks ---------------------------------------------------------------------*/
 
 /**
   * @brief  Enter Idle state
@@ -91,13 +84,13 @@ void StopEnterTask(void *argument)
     {
         if (xQueueReceive(Stop_MessageQueue, &Stopstr, 0) == pdTRUE)
         {
-            /*************************** 休眠前操作 ***************************/
+            
         sleep:
             IdleTimerCount = 0;
 
             //sensors
 
-            //usart（★ SPL 版：自己写的反初始化）
+            //usart
             MX_USART1_UART_Init();
 
             //lcd
@@ -107,31 +100,29 @@ void StopEnterTask(void *argument)
             //touch
             CST816_Sleep();
 
-            /*******************************************************************/
-
-            /****************************** 进入休眠 ******************************/
 
             vTaskSuspendAll();
             CLEAR_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk);
 
-            /* ★ SPL 版 STOP 模式 */
+
             PWR_EnterSTOPMode(PWR_Regulator_ON, PWR_STOPEntry_WFI);
 
-            // ============ 这里是休眠期，CPU 停止 ============
+            //  CPU 停止 
 
-            /*******************************************************************/
 
-            /****************************** 退出休眠 ******************************/
+            // 退出休眠 
+
+            SystemClock_Config();       
+            Delay_Init();              
 
             SET_BIT(SysTick->CTRL, SysTick_CTRL_TICKINT_Msk);
-            /* ★ SPL / CMSIS 版 SysTick（建议加回） */
-            SysTick_Config(SystemCoreClock);
+
+           
             xTaskResumeAll();
 
-            /*******************************************************************/
 
-            /****************************** 唤醒后判断 ******************************/
 
+            // 唤醒后判断
             /* MPU 手腕检测 */
             if (HWInterface.IMU.wrist_is_enabled)
             {
@@ -161,11 +152,10 @@ void StopEnterTask(void *argument)
                 goto sleep;
             }
 
-            /*******************************************************************/
 
-            /****************************** 唤醒后恢复 ******************************/
+            // 唤醒后恢复 
 
-            //usart（★ SPL 版：自己写的初始化）
+            //usart
             MX_USART1_UART_Init();
 
             //lcd
@@ -175,9 +165,8 @@ void StopEnterTask(void *argument)
             //touch
             CST816_Wakeup();
 
-            /* 检查是否在充电（★ FreeRTOS 事件组） */
 
-        }   /* ★ 注意：原代码这里有个大括号位置问题，见下文 */
+        }   
 
         vTaskDelay(pdMS_TO_TICKS(100));
     }

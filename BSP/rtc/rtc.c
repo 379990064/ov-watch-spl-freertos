@@ -1,4 +1,4 @@
-﻿/**
+/**
   ******************************************************************************
   * @file    rtc.c
   * @brief   RTC configuration (Standard Peripheral Library)
@@ -41,7 +41,6 @@ void MX_RTC_Init(void)
 
     /* ---------- 2. 选择 RTC 时钟源（LSE） ---------- */
     RCC_LSEConfig(RCC_LSE_ON);
-    /* 等待 LSE 就绪（实际项目建议加超时） */
     while (RCC_GetFlagStatus(RCC_FLAG_LSERDY) == RESET);
 
     RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);
@@ -57,10 +56,8 @@ void MX_RTC_Init(void)
     RTC_Init(&RTC_InitStructure);
 
     /* ---------- 5. 判断是否第一次上电 ---------- */
-    /* USER CODE BEGIN Check_RTC_BKUP */
     if (RTC_ReadBackupRegister(RTC_BKP_DR0) != 0x5050)
     {
-    /* USER CODE END Check_RTC_BKUP */
 
         /* ---------- 5.1 设置初始时间 ---------- */
         sTime.RTC_Hours   = 0x11;
@@ -80,10 +77,9 @@ void MX_RTC_Init(void)
         /* 先关闭唤醒定时器 */
         RTC_WakeUpCmd(DISABLE);
 
-        /* 时钟源：RTCCLK / 16 */
-        RTC_WakeUpClockConfig(RTC_WakeUpClock_CK_SPRE_16bits);
+        RTC_WakeUpClockConfig(RTC_WakeUpClock_RTCCLK_Div16);
 
-        /* 计数 2000 次后唤醒（约 2 秒，取决于 RTC 时钟） */
+        /* 计数 2000 次后唤醒（约 1 秒） */
         RTC_SetWakeUpCounter(2000);
 
         /* 清除唤醒标志，使能唤醒中断 */
@@ -98,7 +94,15 @@ void MX_RTC_Init(void)
         /* 写入魔数，标记已初始化 */
         RTC_WriteBackupRegister(RTC_BKP_DR0, 0x5050);
     }
-    /* USER CODE END RTC_Init 2 */
+    else
+    {
+        RTC_WakeUpCmd(DISABLE);
+        RTC_WakeUpClockConfig(RTC_WakeUpClock_RTCCLK_Div16);
+        RTC_SetWakeUpCounter(2000);
+        RTC_ClearITPendingBit(RTC_IT_WUT);
+        RTC_ITConfig(RTC_IT_WUT, ENABLE);
+        RTC_WakeUpCmd(ENABLE);
+    }
 }
 
 /* ---------------------------------------------------------------------------
@@ -113,8 +117,6 @@ void RTC_MspInit(void)
     /* 使能 PWR 时钟 */
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
 
-    /* 使能 RTC 时钟（部分 SPL 版本无 __HAL_RCC_RTC_ENABLE，
-       通过 RCC_RTCCLKCmd + RCC_APB1PeriphClockCmd(PWR) 完成） */
     RCC_RTCCLKCmd(ENABLE);
 
     /* ---------- 配置 NVIC：RTC 唤醒中断 ---------- */
@@ -150,12 +152,8 @@ void RTC_MspDeInit(void)
     NVIC_InitStructure.NVIC_IRQChannelCmd                = DISABLE;
     NVIC_Init(&NVIC_InitStructure);
 
-    /* USER CODE BEGIN RTC_MspDeInit 1 */
-
-    /* USER CODE END RTC_MspDeInit 1 */
 }
 
-/* USER CODE BEGIN 1 */
 
 /* ---------------------------------------------------------------------------
  * 星期计算：基姆拉尔森公式
@@ -183,13 +181,11 @@ void RTC_SetTime1(uint8_t hours, uint8_t minutes, uint8_t seconds)
 {
     RTC_TimeTypeDef time = {0};
 
-    /* ★ SPL 成员名：RTC_Hours / RTC_Minutes / RTC_Seconds */
     time.RTC_Hours   = hours;
     time.RTC_Minutes = minutes;
     time.RTC_Seconds = seconds;
     time.RTC_H12     = RTC_H12_AM;
 
-    /* ★ SPL：RTC_SetTime(RTC_Format_BIN, &time) */
     RTC_SetTime(RTC_Format_BIN, &time);
 }
 
@@ -200,14 +196,14 @@ void RTC_SetDate1(uint8_t year, uint8_t month, uint8_t date)
 {
     RTC_DateTypeDef setdate = {0};
 
-    /* ★ SPL 成员名：RTC_Date / RTC_Month / RTC_Year / RTC_WeekDay */
+
     setdate.RTC_Date    = date;
     setdate.RTC_Month   = month;
     setdate.RTC_Year    = year;
     setdate.RTC_WeekDay = weekday_calculate(year, month, date, 20);
 
-    /* ★ SPL：RTC_SetDate(RTC_Format_BIN, &setdate) */
+
     RTC_SetDate(RTC_Format_BIN, &setdate);
 }
 
-/* USER CODE END 1 */
+

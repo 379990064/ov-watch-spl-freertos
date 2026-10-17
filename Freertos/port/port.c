@@ -426,6 +426,12 @@ __asm void xPortPendSVHandler( void )
 
 void xPortSysTickHandler( void )
 {
+    /* ★ 本工程的 port.c 没有调用 vApplicationTickHook 的代码，
+     *   所以 configUSE_TICK_HOOK 开不开都没用，
+     *   必须在系统节拍里显式调用，LVGL 才有 1ms 时基
+     *   （TaskTickHook 里做 lv_tick_inc(1) 和计时器页面计数）。 */
+    extern void TaskTickHook( void );
+
     /* The SysTick runs at the lowest interrupt priority, so when this interrupt
      * executes all interrupts must be unmasked.  There is therefore no need to
      * save and then restore the interrupt mask value as its value is already
@@ -440,6 +446,9 @@ void xPortSysTickHandler( void )
              * the PendSV interrupt.  Pend the PendSV interrupt. */
             portNVIC_INT_CTRL_REG = portNVIC_PENDSVSET_BIT;
         }
+
+        /* 用户节拍钩子（LVGL 时基 + 计时器页面） */
+        TaskTickHook();
     }
 
     vPortClearBASEPRIFromISR();

@@ -172,11 +172,11 @@
 .\objects\user_runmodetasks.o: .\FWLIB\inc\misc.h
 .\objects\user_runmodetasks.o: .\FWLIB\inc\stm32f4xx_flash_ramfunc.h
 .\objects\user_runmodetasks.o: .\User\stm32f4xx_it.h
+.\objects\user_runmodetasks.o: .\System\delay.h
 .\objects\user_runmodetasks.o: .\BSP\seiral\serial.h
 .\objects\user_runmodetasks.o: .\BSP\LCD\lcd_init.h
 .\objects\user_runmodetasks.o: .\System\sys.h
 .\objects\user_runmodetasks.o: .\BSP\TOUCH\CST816.h
 .\objects\user_runmodetasks.o: .\BSP\i2c\myi2c.h
-.\objects\user_runmodetasks.o: .\System\delay.h
 .\objects\user_runmodetasks.o: .\BSP\Key\key.h
 .\objects\user_runmodetasks.o: .\User\Func\Inc\HWDataAccess.h

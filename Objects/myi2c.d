@@ -29,3 +29,4 @@
 .\objects\myi2c.o: .\FWLIB\inc\misc.h
 .\objects\myi2c.o: .\FWLIB\inc\stm32f4xx_flash_ramfunc.h
 .\objects\myi2c.o: .\System\Delay.h
+.\objects\myi2c.o: BSP\i2c\myi2c.h

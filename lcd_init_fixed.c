@@ -1,0 +1,282 @@
+/* lcd_init.c —— LCD 驱动与背光控制*/
+
+#include "lcd_init.h"
+#include "delay.h"
+#include "MYSPI.h"
+#include "tim.h"
+
+
+
+/******************************************************************************
+      函数说明：LCD端口初始化
+      入口数据：无
+      返回值：  无
+******************************************************************************/
+void LCD_GPIO_Init(void)
+{
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOC | RCC_AHB1Periph_GPIOD,ENABLE);
+
+	GPIO_InitTypeDef  GPIO_InitStructure = {0};
+	
+	GPIO_InitStructure.GPIO_Pin = RES_PIN;	 
+ 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT; 		 //推挽输出
+	GPIO_InitStructure.GPIO_Speed = GPIO_Fast_Speed;//速度50MHz
+	GPIO_InitStructure.GPIO_OType	=	GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd	=	GPIO_PuPd_NOPULL;
+ 	GPIO_Init(GPIOB, &GPIO_InitStructure);	  //初始化GPIOB
+
+	GPIO_InitStructure.GPIO_Pin = DC_PIN;	
+	GPIO_Init(GPIOC, &GPIO_InitStructure);	
+
+	GPIO_InitStructure.GPIO_Pin = CS_PIN;	
+	GPIO_Init(GPIOD, &GPIO_InitStructure);	
+
+	
+ 	GPIO_WriteBit(GPIOB, RES_PIN, SET);
+	GPIO_WriteBit(GPIOC, DC_PIN, SET);
+	GPIO_WriteBit(GPIOD, CS_PIN, SET);
+}
+
+
+/******************************************************************************
+      函数说明：LCD串行数据写入函数(software SPI)
+      入口数据：dat  要写入的串行数据
+      返回值：  无
+******************************************************************************/
+void LCD_Writ_Bus(u8 dat) 
+{	
+	//hard SPI
+	SPI1_ReadWriteByte(dat);
+	
+	//soft SPI
+	/*
+	u8 i;
+	for(i=0;i<8;i++)
+	{			  
+		LCD_SCLK_Clr();
+		if(dat&0x80)
+		{
+		   LCD_MOSI_Set();
+		}
+		else
+		{
+		   LCD_MOSI_Clr();
+		}
+		LCD_SCLK_Set();
+		dat<<=1;
+	}	
+	*/
+}
+
+
+/******************************************************************************
+      函数说明：LCD写入数据
+      入口数据：dat 写入的数据
+      返回值：  无
+******************************************************************************/
+void LCD_WR_DATA8(u8 dat)
+{
+	LCD_Writ_Bus(dat);
+}
+
+
+/******************************************************************************
+      函数说明：LCD写入数据
+      入口数据：dat 写入的数据
+      返回值：  无
+******************************************************************************/
+
+void LCD_WR_DATA(uint16_t dat)
+{
+    uint8_t temp[2];
+    temp[0] = (dat >> 8) & 0xff;
+    temp[1] = dat & 0xff;
+
+    SPI1_TransmitByte(temp[0]);
+    SPI1_TransmitByte(temp[1]);
+}
+
+/******************************************************************************
+      函数说明：LCD写入命令
+      入口数据：dat 写入的命令
+      返回值：  无
+******************************************************************************/
+void LCD_WR_REG(u8 dat)
+{
+	LCD_DC_Clr();//写命令
+	SPI1_TransmitByte(dat);
+	LCD_DC_Set();//写数据
+}
+
+
+/******************************************************************************
+      函数说明：设置起始和结束地址
+      入口数据：x1,x2 设置列的起始和结束地址
+                y1,y2 设置行的起始和结束地址
+      返回值：  无
+******************************************************************************/
+void LCD_Address_Set(u16 x1,u16 y1,u16 x2,u16 y2)
+{
+	LCD_WR_REG(0x2a);//列地址设置
+	LCD_WR_DATA(x1);
+	LCD_WR_DATA(x2);
+	LCD_WR_REG(0x2b);//行地址设置
+	LCD_WR_DATA(y1);
+	LCD_WR_DATA(y2);
+	LCD_WR_REG(0x2c);//储存器写
+}
+
+
+/******************************************************************************
+      函数说明：LCD调节背光
+      入口数据：dc,占空比,5%~100%
+      返回值：  无
+
+      ★ 原来是 TIM_SetCompare3(TIM3, ...)，TIM3 无时钟，写进去无效。
+        背光实际由 TIM2_CH1(PA15) 驱动，所以用 TIM_SetCompare1(TIM2, ...)。
+******************************************************************************/
+void LCD_Set_Light(uint8_t dc)
+{
+    if (dc >= 5 && dc <= 100)
+        TIM_SetCompare1(TIM2, dc * PWM_PERIOD / 100);
+}
+
+/******************************************************************************
+      函数说明：LCD关闭背光
+      入口数据：无
+      返回值：  无
+******************************************************************************/
+void LCD_Close_Light(void)
+{
+	TIM_SetCompare1(TIM2, 0);
+}
+
+
+/******************************************************************************
+      函数说明：LCD开启背光
+      入口数据：无
+      返回值：  无
+******************************************************************************/
+void LCD_Open_Light(void)
+{
+        TIM_SetCompare1(TIM2, 150);
+}
+
+/******************************************************************************
+      函数说明：ST7789 SLEEP IN
+      入口数据：无
+      返回值：  无
+******************************************************************************/
+void LCD_ST7789_SleepIn(void)
+{
+	LCD_WR_REG(0x10);
+	Delay_ms(100);
+}
+
+
+/******************************************************************************
+      函数说明：ST7789 SLEEP OUT
+      入口数据：无
+      返回值：  无
+******************************************************************************/
+void LCD_ST7789_SleepOut(void)
+{
+	LCD_WR_REG(0x11);
+	Delay_ms(100);
+}
+
+
+/******************************************************************************
+      函数说明：LCD初始化
+      入口数据：无
+      返回值：  无
+******************************************************************************/
+void LCD_Init(void)
+{
+	LCD_GPIO_Init();//初始化GPIO
+	LCD_CS_Clr();		//chip select
+	
+	LCD_RES_Clr();	//复位
+	Delay_ms(100);
+	LCD_RES_Set();
+	Delay_ms(100);
+	
+	LCD_WR_REG(0x11); 
+	Delay_ms(120); 
+	LCD_WR_REG(0x36); 
+	if(USE_HORIZONTAL==0)LCD_WR_DATA8(0x00);
+	else if(USE_HORIZONTAL==1)LCD_WR_DATA8(0xC0);
+	else if(USE_HORIZONTAL==2)LCD_WR_DATA8(0x70);
+	else LCD_WR_DATA8(0xA0);
+
+	LCD_WR_REG(0x3A);
+	LCD_WR_DATA8(0x05);
+
+	LCD_WR_REG(0xB2);
+	LCD_WR_DATA8(0x0C);
+	LCD_WR_DATA8(0x0C);
+	LCD_WR_DATA8(0x00);
+	LCD_WR_DATA8(0x33);
+	LCD_WR_DATA8(0x33); 
+
+	LCD_WR_REG(0xB7); 
+	LCD_WR_DATA8(0x35);  
+
+	LCD_WR_REG(0xBB);
+	LCD_WR_DATA8(0x19);
+
+	LCD_WR_REG(0xC0);
+	LCD_WR_DATA8(0x2C);
+
+	LCD_WR_REG(0xC2);
+	LCD_WR_DATA8(0x01);
+
+	LCD_WR_REG(0xC3);
+	LCD_WR_DATA8(0x12);   
+
+	LCD_WR_REG(0xC4);
+	LCD_WR_DATA8(0x20);  
+
+	LCD_WR_REG(0xC6); 
+	LCD_WR_DATA8(0x0F);    
+
+	LCD_WR_REG(0xD0); 
+	LCD_WR_DATA8(0xA4);
+	LCD_WR_DATA8(0xA1);
+
+	LCD_WR_REG(0xE0);
+	LCD_WR_DATA8(0xD0);
+	LCD_WR_DATA8(0x04);
+	LCD_WR_DATA8(0x0D);
+	LCD_WR_DATA8(0x11);
+	LCD_WR_DATA8(0x13);
+	LCD_WR_DATA8(0x2B);
+	LCD_WR_DATA8(0x3F);
+	LCD_WR_DATA8(0x54);
+	LCD_WR_DATA8(0x4C);
+	LCD_WR_DATA8(0x18);
+	LCD_WR_DATA8(0x0D);
+	LCD_WR_DATA8(0x0B);
+	LCD_WR_DATA8(0x1F);
+	LCD_WR_DATA8(0x23);
+
+	LCD_WR_REG(0xE1);
+	LCD_WR_DATA8(0xD0);
+	LCD_WR_DATA8(0x04);
+	LCD_WR_DATA8(0x0C);
+	LCD_WR_DATA8(0x11);
+	LCD_WR_DATA8(0x13);
+	LCD_WR_DATA8(0x2C);
+	LCD_WR_DATA8(0x3F);
+	LCD_WR_DATA8(0x44);
+	LCD_WR_DATA8(0x51);
+	LCD_WR_DATA8(0x2F);
+	LCD_WR_DATA8(0x1F);
+	LCD_WR_DATA8(0x1F);
+	LCD_WR_DATA8(0x20);
+	LCD_WR_DATA8(0x23);
+
+	LCD_WR_REG(0x21); 
+
+	LCD_WR_REG(0x29); 
+}

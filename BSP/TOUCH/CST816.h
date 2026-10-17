@@ -1,4 +1,4 @@
-﻿#ifndef __CST816_H
+#ifndef __CST816_H
 #define __CST816_H
 
 #include "stdint.h"
@@ -9,10 +9,16 @@
 
 /* CST816 dev pin defination */
 
-
-#define TOUCH_RST_PIN GPIO_Pin_15
-#define TOUCH_INT_PIN GPIO_Pin_1
-#define TOUCH_RST_PORT GPIOA
+/* ★ 修正（原来写的是 PA15！）
+ *   原定义 TOUCH_RST_PORT=GPIOA / TOUCH_RST_PIN=GPIO_Pin_15 与 LCD 背光
+ *   （lcd_init.h 的 BLK_PIN=PA15、tim.c 的 TIM2_CH1=PA15）是同一个引脚。
+ *   结果 CST816_RESET() 会把 PA15 从 TIM2 复用输出改成普通 GPIO 并恒定拉高，
+ *   导致：① 背光 PWM 彻底失效、恒定全亮；② 触摸复位线被钉死、CST816 收不到
+ *   有效复位时序，触摸完全无响应。
+ *   实际硬件：触摸复位 = PB8，背光 = PA15。 */
+#define TOUCH_RST_PIN  GPIO_Pin_8
+#define TOUCH_INT_PIN  GPIO_Pin_1
+#define TOUCH_RST_PORT GPIOB
 #define TOUCH_INT_PORT GPIOB
 
 /* functions define */
@@ -53,6 +59,9 @@ typedef struct
 	unsigned int X_Pos;
 	unsigned int Y_Pos;
 } CST816_Info;
+
+/* 全局实例（定义在 CST816.c），用于取回最近一次读取的触摸坐标 */
+extern CST816_Info CST816_Instance;
 
 /* 手势ID识别选项 */
 typedef enum

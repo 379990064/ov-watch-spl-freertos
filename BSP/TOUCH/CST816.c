@@ -1,8 +1,12 @@
-﻿#include "CST816.h" 
+#include "CST816.h" 
 #include "myi2c.h"
 #include "stm32f4xx.h"                  // Device header
+#include "lcd_init.h"                   // LCD_W / LCD_H（坐标反向要用屏幕尺寸）
 
 #define TOUCH_OFFSET_Y 0
+
+
+#define TOUCH_REVERSE 0
 
 CST816_Info	CST816_Instance;
 
@@ -18,13 +22,22 @@ CST816_Info	CST816_Instance;
 */
 void CST816_GPIO_Init(void)
 {	
-	myi2c_Init();
-	
-	/* 初始化中断引脚,不用中断的话屏蔽掉 */
-	
-	/* 初始化I2C引脚 */
-	
-	/* 给一个停止信号, 复位I2C总线上的所有设备到待机模式 */
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+	myi2c_Init();          
+
+
+	GPIO_InitStructure.GPIO_Pin   = TOUCH_RST_PIN;
+	GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(TOUCH_RST_PORT, &GPIO_InitStructure);
+
+
+	GPIO_WriteBit(TOUCH_RST_PORT, TOUCH_RST_PIN, Bit_SET);
+
+
 	myi2c_end();
 }
 
@@ -126,6 +139,11 @@ void CST816_Get_XY_AXIS(void)
 	IIC_Read_Multi_Byte(Device_Addr,XposH,4,DAT);
 	CST816_Instance.X_Pos=((DAT[0]&0x0F)<<8)|DAT[1];//(temp[0]&0X0F)<<4|
 	CST816_Instance.Y_Pos=((DAT[2]&0x0F)<<8)|DAT[3] + TOUCH_OFFSET_Y;//(temp[2]&0X0F)<<4|
+
+#if TOUCH_REVERSE
+	CST816_Instance.X_Pos = (LCD_W - 1) - CST816_Instance.X_Pos;
+	CST816_Instance.Y_Pos = (LCD_H - 1) - CST816_Instance.Y_Pos;
+#endif
 }
 
 

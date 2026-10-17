@@ -1,0 +1,7 @@
+*** Using Compiler 'V5.06 update 5 (build 528)', folder: 'E:\keil\ARM\ARMCC\Bin'
+Build target 'Target 1'
+compiling user_TasksInit.c...
+linking...
+Program Size: Code=220424 RO-data=174496 RW-data=2080 ZI-data=109608  
+".\Objects\project.axf" - 0 Error(s), 0 Warning(s).
+Build Time Elapsed:  00:00:05

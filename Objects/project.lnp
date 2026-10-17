@@ -46,7 +46,7 @@
 ".\objects\stm32f4xx_wwdg.o"
 ".\objects\delay.o"
 ".\objects\lcd.o"
-".\objects\lcd_init.o"
+".\objects\lcd_init_fixed.o"
 ".\objects\myspi.o"
 ".\objects\serial.o"
 ".\objects\cst816.o"
@@ -141,8 +141,6 @@
 ".\objects\lv_gif.o"
 ".\objects\lodepng.o"
 ".\objects\lv_png.o"
-".\objects\lv_qrcode.o"
-".\objects\qrcodegen.o"
 ".\objects\lv_rlottie.o"
 ".\objects\lv_sjpg.o"
 ".\objects\tjpgd.o"
@@ -261,7 +259,7 @@
 ".\objects\lv_hal_tick.o"
 ".\objects\rtc.o"
 ".\objects\key.o"
---strict --scatter ".\Objects\project.sct"
+--library_type=microlib --strict --scatter ".\Objects\project.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers
 --list ".\Listings\project.map" -o .\Objects\project.axf

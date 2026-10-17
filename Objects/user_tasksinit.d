@@ -44,6 +44,12 @@
 .\objects\user_tasksinit.o: .\FWLIB\inc\stm32f4xx_flash_ramfunc.h
 .\objects\user_tasksinit.o: E:\keil\ARM\ARMCC\Bin\..\include\stdio.h
 .\objects\user_tasksinit.o: .\BSP\LCD\lcd.h
+.\objects\user_tasksinit.o: .\BSP\LCD\lcd_init.h
+.\objects\user_tasksinit.o: .\BSP\seiral\Serial.h
+.\objects\user_tasksinit.o: .\BSP\Key\key.h
+.\objects\user_tasksinit.o: .\BSP\TOUCH\CST816.h
+.\objects\user_tasksinit.o: .\BSP\i2c\myi2c.h
+.\objects\user_tasksinit.o: .\System\delay.h
 .\objects\user_tasksinit.o: .\LVGL\GUI\lvgl\src\lvgl.h
 .\objects\user_tasksinit.o: .\LVGL\GUI\lvgl\src\../lvgl.h
 .\objects\user_tasksinit.o: .\LVGL\GUI\lvgl\src\../src/misc/lv_log.h
@@ -170,6 +176,7 @@
 .\objects\user_tasksinit.o: .\User\GUI_App\Screens\Inc\../../ui.h
 .\objects\user_tasksinit.o: .\User\GUI_App\Screens\Inc\../../../Func/Inc/PageManager.h
 .\objects\user_tasksinit.o: .\User\GUI_App\Screens\Inc\../../../Func/Inc/../../GUI_App/ui.h
+.\objects\user_tasksinit.o: .\User\GUI_App\Screens\Inc\ui_HomePage.h
 .\objects\user_tasksinit.o: User\task\user_TasksInit.h
 .\objects\user_tasksinit.o: User\task\user_HardwareInitTask.h
 .\objects\user_tasksinit.o: User\task\user_RunModeTasks.h

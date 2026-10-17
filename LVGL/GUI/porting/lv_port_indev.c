@@ -111,10 +111,17 @@ static void touchpad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
 /*Return true is the touchpad is pressed*/
 static bool touchpad_is_pressed(void)
 {
-    /*Your code comes here*/
-	if(CST816_Get_FingerNum()!=0x00 && CST816_Get_FingerNum()!=0xFF)
-	{return true;}
-	else
+    /* ★ 一次读出 finger 数，避免重复发起 I2C 事务。
+     *   注意 CST816 的 0x02 寄存器不是单纯「手指个数」：
+     *     0x00        = 无触摸
+     *     0xFF        = 睡眠/未就绪（原代码就是按这个判的）
+     *     其他值      = 有触摸，此时 XposH(0x03) 的高 4 位是手势 ID、
+     *                   低 4 位是 X 坐标高位。
+     *   所以判定条件必须带上 0x80 那类异常值。 */
+    uint8_t f = CST816_Get_FingerNum();
+    if(f != 0x00 && f != 0xFF)
+    {return true;}
+    else
   {return false;}
 }
 

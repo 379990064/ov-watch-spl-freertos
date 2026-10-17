@@ -28,3 +28,4 @@
 .\objects\delay.o: .\FWLIB\inc\stm32f4xx_wwdg.h
 .\objects\delay.o: .\FWLIB\inc\misc.h
 .\objects\delay.o: .\FWLIB\inc\stm32f4xx_flash_ramfunc.h
+.\objects\delay.o: System\Delay.h

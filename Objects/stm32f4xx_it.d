@@ -30,3 +30,5 @@
 .\objects\stm32f4xx_it.o: .\FWLIB\inc\misc.h
 .\objects\stm32f4xx_it.o: .\FWLIB\inc\stm32f4xx_flash_ramfunc.h
 .\objects\stm32f4xx_it.o: User\main.h
+.\objects\stm32f4xx_it.o: .\BSP\seiral\Serial.h
+.\objects\stm32f4xx_it.o: E:\keil\ARM\ARMCC\Bin\..\include\stdio.h

@@ -1,4 +1,4 @@
-﻿#include "serial.h"
+#include "serial.h"
 #include "stm32f4xx.h"
 /* USART1 初始化结构体 */
 USART_InitTypeDef USART1_InitStructure;
@@ -32,7 +32,7 @@ void MX_USART1_UART_Init(void)
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource9,  GPIO_AF_USART1);
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_USART1);
 
-    /* 4. USART1 参数配置（完全对应 HAL 参数） */
+    /* 4. USART1 参数配置 */
     USART1_InitStructure.USART_BaudRate            = 115200;
     USART1_InitStructure.USART_WordLength          = USART_WordLength_8b;
     USART1_InitStructure.USART_StopBits            = USART_StopBits_1;
@@ -41,12 +41,12 @@ void MX_USART1_UART_Init(void)
     USART1_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
     USART_Init(USART1, &USART1_InitStructure);
 
-    /* 5. 配置 DMA2 Stream5 Channel4（USART1_RX） */
+    /* 5. 配置 DMA2 */
     DMA2_Stream5_InitStructure.DMA_Channel            = DMA_Channel_4;
     DMA2_Stream5_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)&(USART1->DR);
-    DMA2_Stream5_InitStructure.DMA_Memory0BaseAddr    = 0;  // 接收时动态设置
+    DMA2_Stream5_InitStructure.DMA_Memory0BaseAddr    = 0;  
     DMA2_Stream5_InitStructure.DMA_DIR                = DMA_DIR_PeripheralToMemory;
-    DMA2_Stream5_InitStructure.DMA_BufferSize         = 0;  // 接收时动态设置
+    DMA2_Stream5_InitStructure.DMA_BufferSize         = 0;  
     DMA2_Stream5_InitStructure.DMA_PeripheralInc      = DMA_PeripheralInc_Disable;
     DMA2_Stream5_InitStructure.DMA_MemoryInc          = DMA_MemoryInc_Enable;
     DMA2_Stream5_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
@@ -59,12 +59,12 @@ void MX_USART1_UART_Init(void)
     DMA2_Stream5_InitStructure.DMA_PeripheralBurst    = DMA_PeripheralBurst_Single;
     DMA_Init(DMA2_Stream5, &DMA2_Stream5_InitStructure);
 
-    /* 6. 配置 DMA2 Stream7 Channel4（USART1_TX） */
+    /* 6. 配置 DMA2  */
     DMA2_Stream7_InitStructure.DMA_Channel            = DMA_Channel_4;
     DMA2_Stream7_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)&(USART1->DR);
-    DMA2_Stream7_InitStructure.DMA_Memory0BaseAddr    = 0;  // 发送时动态设置
+    DMA2_Stream7_InitStructure.DMA_Memory0BaseAddr    = 0;  
     DMA2_Stream7_InitStructure.DMA_DIR                = DMA_DIR_MemoryToPeripheral;
-    DMA2_Stream7_InitStructure.DMA_BufferSize         = 0;  // 发送时动态设置
+    DMA2_Stream7_InitStructure.DMA_BufferSize         = 0;  
     DMA2_Stream7_InitStructure.DMA_PeripheralInc      = DMA_PeripheralInc_Disable;
     DMA2_Stream7_InitStructure.DMA_MemoryInc          = DMA_MemoryInc_Enable;
     DMA2_Stream7_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
@@ -77,13 +77,13 @@ void MX_USART1_UART_Init(void)
     DMA2_Stream7_InitStructure.DMA_PeripheralBurst    = DMA_PeripheralBurst_Single;
     DMA_Init(DMA2_Stream7, &DMA2_Stream7_InitStructure);
 
-    /* 7. 使能 USART1 的 DMA 收发请求 */
+    /* 7. 使能 USART1 的 DMA */
     USART_DMACmd(USART1, USART_DMAReq_Tx | USART_DMAReq_Rx, ENABLE);
 
     /* 8. 使能 USART1 */
     USART_Cmd(USART1, ENABLE);
 
-    /* 9. 配置 NVIC（USART1 中断） */
+    /* 9. 配置 NVIC */
     {
         NVIC_InitTypeDef NVIC_InitStructure;
         NVIC_InitStructure.NVIC_IRQChannel                   = USART1_IRQn;
@@ -92,6 +92,27 @@ void MX_USART1_UART_Init(void)
         NVIC_InitStructure.NVIC_IRQChannelCmd                = ENABLE;
         NVIC_Init(&NVIC_InitStructure);
     }
+}
+
+
+volatile uint8_t HardInt_uart_flag = 0;
+
+
+void USART1_DMA_RX_Restart_ISR(uint8_t *buf, uint16_t len)
+{
+    DMA_Cmd(DMA2_Stream5, DISABLE);
+    DMA_ClearFlag(DMA2_Stream5, DMA_FLAG_TCIF5 | DMA_FLAG_HTIF5 | DMA_FLAG_TEIF5 |
+                                DMA_FLAG_DMEIF5 | DMA_FLAG_FEIF5);
+    DMA2_Stream5->M0AR = (uint32_t)buf;
+    DMA_SetCurrDataCounter(DMA2_Stream5, len);
+    DMA_Cmd(DMA2_Stream5, ENABLE);
+}
+
+
+uint16_t USART1_DMA_RX_Count(uint16_t total)
+{
+    uint16_t remain = DMA_GetCurrDataCounter(DMA2_Stream5);
+    return (remain <= total) ? (uint16_t)(total - remain) : 0U;
 }
 
 /* 使用 DMA 发送一段数据 */
@@ -120,7 +141,7 @@ void USART1_DMA_RX_Start(uint8_t *buf, uint16_t len)
     DMA_Cmd(DMA2_Stream5, ENABLE);
 }
 
-/* fputc 重定向（printf 输出到 USART1） */
+/* fputc 重定向 */
 int fputc(int ch, FILE *f)
 {
     while (USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);

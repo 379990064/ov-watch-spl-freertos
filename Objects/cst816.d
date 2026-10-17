@@ -31,3 +31,5 @@
 .\objects\cst816.o: .\FWLIB\inc\stm32f4xx_wwdg.h
 .\objects\cst816.o: .\FWLIB\inc\misc.h
 .\objects\cst816.o: .\FWLIB\inc\stm32f4xx_flash_ramfunc.h
+.\objects\cst816.o: .\BSP\LCD\lcd_init.h
+.\objects\cst816.o: .\System\sys.h
